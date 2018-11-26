@@ -7,6 +7,7 @@ CESTrackFunctions::CESTrackFunctions()
 			  MY_PLUGIN_DEVELOPER,
 			  MY_PLUGIN_COPYRIGHT)
 {
+	RegisterTagItemFunction("Clean FP", ITEM_FUNCTION_CLEAN_FP);
 }
 
 
@@ -16,15 +17,15 @@ CESTrackFunctions::~CESTrackFunctions()
 
 bool CESTrackFunctions::OnCompileCommand(const char* sCommandLine)
 {
-	if (!strcmp(sCommandLine, ".est aa"))
+	if (!strcmp(sCommandLine, ".fpt"))
 	{
-		auto_accept = !auto_accept;
-		std::string message = "Auto Accept ";
-		if (auto_accept)
-			message.append("on");
-		else
-			message.append("off");
-		DisplayUserMessage("Message", GetPlugInName(), message.c_str(), true, false, false, false, false);
+		CleanFlightPlan(FlightPlanSelectASEL());
+		return true;
+	}
+	if (!strcmp(sCommandLine, ".autodrop"))
+	{
+		autoDrop = (autoDrop == 1 ? 0 : 1);
+		SaveDataToSettings("AutoDrop", "Drop Track for landing AC", (autoDrop == 1 ? "1" : "0"));
 		return true;
 	}
 	return false;
@@ -32,37 +33,64 @@ bool CESTrackFunctions::OnCompileCommand(const char* sCommandLine)
 
 void CESTrackFunctions::OnTimer(int Counter)
 {
-	for (auto flightplan = FlightPlanSelectFirst();
-		 flightplan.IsValid();
-		 flightplan = FlightPlanSelectNext(flightplan))
+	if (!ControllerMyself().IsValid() || !ControllerMyself().IsController())
+		return;
+	if (GetConnectionType() != EuroScopePlugIn::CONNECTION_TYPE_DIRECT)
+		return;
+	if (autoDrop)
 	{
-		if (flightplan.GetSimulated())
-			continue;
-
-		if (flightplan.GetTrackingControllerIsMe())
+		for (auto flightplan = FlightPlanSelectFirst();
+			flightplan.IsValid();
+			flightplan = FlightPlanSelectNext(flightplan))
+		{
+			if (flightplan.GetSimulated()) continue;
 			if (CheckDrop(flightplan))
 				flightplan.EndTracking();
-
-		if (auto_accept && flightplan.GetState() == EuroScopePlugIn::FLIGHT_PLAN_STATE_TRANSFER_TO_ME_INITIATED)
-			if (CheckHandover(flightplan))
-				flightplan.AcceptHandoff();
+		}
 	}
 }
 
-bool CESTrackFunctions::CheckDrop(EuroScopePlugIn::CFlightPlan& flightplan)
+void CESTrackFunctions::PostDebugMessage(std::string message)
 {
-	if (flightplan.GetFPTrackPosition().GetPressureAltitude() > 2500)
+	DisplayUserMessage("Debug", "Debug", message.c_str(), true, true, true, false, false);
+}
+
+bool CESTrackFunctions::CheckDrop(const EuroScopePlugIn::CFlightPlan & flightplan) const
+{
+	if (!flightplan.GetTrackingControllerIsMe())
 		return false;
-	flightplan.GetFPTrackPosition().IsFPTrackPosition();
-	if (flightplan.GetDistanceToDestination() < 10)
+	auto radarTarget = flightplan.GetCorrelatedRadarTarget();
+	if (!radarTarget.IsValid())
+		return false;
+	auto position = radarTarget.GetPosition();
+	if (!position.IsValid())
+		return false;
+	if (flightplan.GetClearedAltitude() != 1 && flightplan.GetClearedAltitude() != 2)
+		return false;
+	if (position.GetPressureAltitude() < dropLevel && flightplan.GetDistanceToDestination() < dropDistance)
 		return true;
 	return false;
 }
 
-bool CESTrackFunctions::CheckHandover(EuroScopePlugIn::CFlightPlan& flightplan)
+void CESTrackFunctions::CleanFlightPlan(EuroScopePlugIn::CFlightPlan & flightplan)
 {
-	auto entry_minutes = flightplan.GetSectorEntryMinutes();
-	if (entry_minutes != -1 && entry_minutes <= 20)
-		return true;
-	return false;
+	if (!flightplan.IsValid()) return;
+	std::string route{ FlightPlanFunctions.StripRouteString(flightplan.GetFlightPlanData().GetRoute(), flightplan) };
+	flightplan.GetFlightPlanData().SetRoute(route.c_str());
+	flightplan.GetFlightPlanData().AmendFlightPlan();
 }
+
+void CESTrackFunctions::LoadSettings()
+{
+	auto ad = GetDataFromSettings("AutoDrop");
+	if (ad != NULL)
+		autoDrop = (strcmp(ad, "1") ? 1 : 0);
+}
+
+void CESTrackFunctions::OnFunctionCall(int FunctionId, const char * sItemString, POINT Pt, RECT Area)
+{
+	PostDebugMessage(sItemString);
+	if (FunctionId == ITEM_FUNCTION_CLEAN_FP)
+		CleanFlightPlan(FlightPlanSelectASEL());
+}
+

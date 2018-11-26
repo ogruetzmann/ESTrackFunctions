@@ -21,12 +21,18 @@
     <ClCompile Include="ESTrackFunctions.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="CFlightPlanFunctions.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ESTrackFunctions.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="lib\EuroScopePlugIn.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="CFlightPlanFunctions.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
