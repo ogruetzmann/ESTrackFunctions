@@ -1,6 +1,6 @@
 #include "ESTrackFunctions.h"
 
-CESTrackFunctions * pMyPlugIn =	nullptr;
+CESTrackFunctions * pMyPlugIn{ nullptr };
 
 void __declspec (dllexport) EuroScopePlugInInit(EuroScopePlugIn::CPlugIn ** pPlugInInstance)
 {

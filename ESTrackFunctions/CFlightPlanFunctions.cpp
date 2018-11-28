@@ -11,7 +11,7 @@ CFlightPlanFunctions::~CFlightPlanFunctions()
 {
 }
 
-std::string CFlightPlanFunctions::StripRouteString(std::string route, EuroScopePlugIn::CFlightPlan & flightplan)
+std::string CFlightPlanFunctions::StripRouteString(std::string route, const EuroScopePlugIn::CFlightPlan & flightplan)
 {
 	StripInvalid(route, flightplan);
 	StripWhitespace(route);
@@ -23,11 +23,11 @@ void CFlightPlanFunctions::StripWhitespace(std::string & str)
 	str = std::regex_replace(str, std::regex{ "^\\s+|(\\s)\\s+" }, "$1");
 }
 
-void CFlightPlanFunctions::StripInvalid(std::string & str, EuroScopePlugIn::CFlightPlan & flightplan)
+void CFlightPlanFunctions::StripInvalid(std::string & str, const EuroScopePlugIn::CFlightPlan & flightplan)
 {
-	std::string departure{ flightplan.GetFlightPlanData().GetOrigin() };
+	std::string origin{ flightplan.GetFlightPlanData().GetOrigin() };
 	std::string destination{ flightplan.GetFlightPlanData().GetDestination() };
-	std::regex rDeparture{ "(?:^|\\s)" + departure + "\\s"};
+	std::regex rDeparture{ "(?:^|\\s)" + origin +"\\s" };
 	std::regex rDestination{ "\\s" + destination + "(?:\\s|$)" };
 	std::regex rSpeedLevel{ "(?:^|\\s)[NKM]\\d{3,4}[FAM]\\d{3,4}" };
 	std::regex rSidStar{ "(?:^|\\s)SID | STAR(?:$|\\s)" };

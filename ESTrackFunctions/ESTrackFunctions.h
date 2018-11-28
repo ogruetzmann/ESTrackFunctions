@@ -14,6 +14,7 @@ constexpr auto DROP_DISTANCE{ 10 };
 constexpr auto DROP_LEVEL{ 2500 };
 
 constexpr auto ITEM_FUNCTION_CLEAN_FP{ 1 };
+constexpr auto SETTING_AUTODROP{ "AutoDrop" };
 
 class CESTrackFunctions :
 	public EuroScopePlugIn::CPlugIn
@@ -21,10 +22,6 @@ class CESTrackFunctions :
 public:
 	CESTrackFunctions();
 	virtual ~CESTrackFunctions();
-	bool OnCompileCommand(const char* sCommandLine);
-	void OnTimer(int Counter);
-
-	void PostDebugMessage(std::string message);
 
 private:
 	int dropLevel{ DROP_LEVEL };
@@ -33,9 +30,11 @@ private:
 	CFlightPlanFunctions FlightPlanFunctions;
 
 	bool CheckDrop(const EuroScopePlugIn::CFlightPlan& flightplan) const;
-	void CleanFlightPlan(EuroScopePlugIn::CFlightPlan& flightplan);
+	void CleanFlightPlan();
+	void DisplayMessage(const std::string message, const std::string handler = "Debug");
 	void LoadSettings();
-
+	bool OnCompileCommand(const char* sCommandLine);
 	void OnFunctionCall(int FunctionId, const char * sItemString, POINT Pt, RECT Area);
+	void OnTimer(int Counter);
 };
 
